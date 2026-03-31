@@ -1,0 +1,232 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PlanMode {
+  STANDARD
+  LIGHT
+  B_PLAN
+  RECOVERY
+}
+
+enum ActivityType {
+  CHECKIN
+  GYM_VISIT
+  PLAN_COMPLETED
+  B_PLAN_COMPLETED
+  WEIGHT_LOG
+  NO_BINGE
+  HEALTHY_ATE_OUT
+  STEP_BONUS
+  BINGE_PENALTY
+  SKIP_PENALTY
+  RECOVERY_DAY
+}
+
+enum CoachMessageKind {
+  SUMMARY
+  MOTIVATION
+  FOOD_ADVICE
+  WEEKLY_REVIEW
+}
+
+model UserProfile {
+  id                   String             @id @default(cuid())
+  age                  Int
+  gender               Gender
+  heightCm             Int
+  startWeightKg        Float
+  startBodyFatPct      Float?
+  targetWeightKg       Float
+  targetBodyFatPct     Float?
+  goalDate             DateTime
+  currentStrengthLevel String
+  currentCardioLevel   String
+  gymTime              String
+  morningWorkout       Boolean            @default(true)
+  workoutContext       String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  activityLogs         ActivityLog[]
+  coachMessages        CoachMessage[]
+  dailyCheckins        DailyCheckin[]
+  dailyPlans           DailyPlan[]
+  goalSnapshots        GoalSnapshot[]
+  progressScoreLogs    ProgressScoreLog[]
+  settings             AppSettings?
+  weeklySummaries      WeeklySummary[]
+}
+
+model AppSettings {
+  id                     String      @id @default(cuid())
+  userId                 String      @unique
+  aiTone                 String      @default("balanced")
+  aiProvider             String      @default("mock")
+  gymVisitMeters         Int         @default(30)
+  planCompletedMeters    Int         @default(40)
+  bPlanMeters            Int         @default(15)
+  weightLogMeters        Int         @default(5)
+  checkinMeters          Int         @default(5)
+  noBingeMeters          Int         @default(10)
+  healthyAteOutMeters    Int         @default(10)
+  stepBonusThreshold     Int         @default(8000)
+  stepBonusMeters        Int         @default(10)
+  bingePenaltyMeters     Int         @default(-20)
+  skipPenaltyMeters      Int         @default(-15)
+  minimumActiveDayMeters Int         @default(8)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  user                   UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyCheckin {
+  id               String            @id @default(cuid())
+  userId           String
+  day              DateTime
+  weightKg         Float
+  bodyFatPct       Float?
+  sleepHours       Float
+  conditionScore   Int
+  moodScore        Int
+  bingeRiskScore   Int
+  didGym           Boolean           @default(false)
+  completedPlan    Boolean           @default(false)
+  completedBPlan   Boolean           @default(false)
+  workoutPerformed String?
+  steps            Int?
+  mealScore        Int
+  ateOut           Boolean           @default(false)
+  bingeAte         Boolean           @default(false)
+  comment          String?
+  planMode         PlanMode?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  activityLogs     ActivityLog[]
+  coachMessages    CoachMessage[]
+  progressLog      ProgressScoreLog?
+  user             UserProfile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId, day])
+}
+
+model DailyPlan {
+  id            String         @id @default(cuid())
+  userId        String
+  day           DateTime
+  planMode      PlanMode
+  summary       String
+  warmup        String
+  strength      String
+  cardio        String
+  cooldown      String
+  bPlan         String
+  foodAdvice    String
+  motivation    String
+  cautionLevel  Int
+  rawResponse   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  coachMessages CoachMessage[]
+  user          UserProfile    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId, day])
+}
+
+model ActivityLog {
+  id          String        @id @default(cuid())
+  userId      String
+  checkinId   String?
+  day         DateTime
+  type        ActivityType
+  label       String
+  metersDelta Int
+  note        String?
+  createdAt   DateTime      @default(now())
+  checkin     DailyCheckin? @relation(fields: [checkinId], references: [id], onDelete: SetNull)
+  user        UserProfile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, day])
+}
+
+model ProgressScoreLog {
+  id               String        @id @default(cuid())
+  userId           String
+  checkinId        String?       @unique
+  day              DateTime
+  totalMeters      Int
+  cumulativeMeters Int
+  note             String?
+  createdAt        DateTime      @default(now())
+  checkin          DailyCheckin? @relation(fields: [checkinId], references: [id], onDelete: SetNull)
+  user             UserProfile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId, day])
+}
+
+model WeeklySummary {
+  id                String      @id @default(cuid())
+  userId            String
+  weekStart         DateTime
+  weekEnd           DateTime
+  totalMeters       Int
+  deltaVsPrevious   Int
+  successfulActions String
+  derailers         String
+  nextFocus         String
+  summaryText       String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
+}
+
+model CoachMessage {
+  id          String           @id @default(cuid())
+  userId      String
+  checkinId   String?
+  dailyPlanId String?
+  day         DateTime
+  kind        CoachMessageKind
+  content     String
+  createdAt   DateTime         @default(now())
+  checkin     DailyCheckin?    @relation(fields: [checkinId], references: [id], onDelete: SetNull)
+  dailyPlan   DailyPlan?       @relation(fields: [dailyPlanId], references: [id], onDelete: SetNull)
+  user        UserProfile      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, day])
+}
+
+model GoalSnapshot {
+  id                    String      @id @default(cuid())
+  userId                String
+  capturedAt            DateTime    @default(now())
+  weightKg              Float?
+  bodyFatPct            Float?
+  cumulativeMeters      Int
+  estimatedGoalProgress Float
+  note                  String?
+  user                  UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capturedAt])
+}
