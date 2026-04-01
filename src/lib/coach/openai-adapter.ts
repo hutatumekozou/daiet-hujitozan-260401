@@ -3,6 +3,7 @@ import {
   dailyPlanResponseSchema,
   weeklySummaryResponseSchema,
 } from "@/lib/schemas";
+import { applyStrengthLoadGuidance } from "@/lib/coach/strength-guidance";
 import {
   buildDailyPlanPrompt,
   buildWeeklySummaryPrompt,
@@ -44,7 +45,10 @@ async function getStructuredJson(prompt: string) {
 export const openAICoachAdapter: CoachAdapter = {
   async generateDailyPlan(input: GenerateDailyPlanInput) {
     const json = await getStructuredJson(buildDailyPlanPrompt(input));
-    return dailyPlanResponseSchema.parse(json);
+    return applyStrengthLoadGuidance(
+      dailyPlanResponseSchema.parse(json),
+      input.profile,
+    );
   },
 
   async generateWeeklySummary(input: GenerateWeeklySummaryInput) {

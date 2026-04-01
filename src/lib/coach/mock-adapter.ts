@@ -2,6 +2,7 @@ import {
   dailyPlanResponseSchema,
   weeklySummaryResponseSchema,
 } from "@/lib/schemas";
+import { applyStrengthLoadGuidance } from "@/lib/coach/strength-guidance";
 import type {
   CoachAdapter,
   GenerateDailyPlanInput,
@@ -102,7 +103,10 @@ export const mockCoachAdapter: CoachAdapter = {
       },
     } as const;
 
-    return dailyPlanResponseSchema.parse(planByMode[mode]);
+    return applyStrengthLoadGuidance(
+      dailyPlanResponseSchema.parse(planByMode[mode]),
+      input.profile,
+    );
   },
 
   async generateWeeklySummary(input: GenerateWeeklySummaryInput) {
