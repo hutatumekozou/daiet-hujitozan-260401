@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -16,22 +15,12 @@ export function WeightTrendChart({
 }: {
   data: Array<{ day: string; weightKg: number; meters: number }>;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   if (data.length === 0) {
     return (
       <div className="rounded-[22px] bg-white/70 px-4 py-8 text-center text-sm text-[var(--muted)]">
         記録が増えるとグラフが表示されます。
       </div>
     );
-  }
-
-  if (!mounted) {
-    return <div className="h-72 w-full rounded-[22px] bg-white/70" />;
   }
 
   return (

@@ -9,6 +9,13 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] ?? "file:../dev.db",
+    url:
+      process.env["DATABASE_URL"] ??
+      "postgresql://postgres:postgres@127.0.0.1:5432/fuji_climb_diet?schema=public",
+    directUrl:
+      process.env["DIRECT_URL"] ??
+      process.env["DATABASE_URL_UNPOOLED"] ??
+      process.env["DATABASE_URL"] ??
+      "postgresql://postgres:postgres@127.0.0.1:5432/fuji_climb_diet?schema=public",
   },
 });

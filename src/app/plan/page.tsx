@@ -3,6 +3,8 @@ import { refreshDailyPlanAction } from "@/app/actions";
 import { Card } from "@/components/ui/card";
 import { getPlanModeLabel, getDashboardPageData } from "@/lib/server/app-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function PlanPage() {
   const data = await getDashboardPageData();
 

@@ -3,6 +3,8 @@ import { ja } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { getHistoryPageData } from "@/lib/server/app-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function HistoryPage() {
   const data = await getHistoryPageData();
 

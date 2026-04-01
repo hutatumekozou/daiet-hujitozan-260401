@@ -4,6 +4,8 @@ import { MountainProgress } from "@/components/plan/mountain-progress";
 import { Card } from "@/components/ui/card";
 import { getDashboardPageData, getPlanModeLabel } from "@/lib/server/app-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const data = await getDashboardPageData();
 

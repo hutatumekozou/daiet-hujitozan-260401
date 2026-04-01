@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/date";
 import { getCheckinPageData } from "@/lib/server/app-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function CheckinPage() {
   const data = await getCheckinPageData();
 

@@ -3,6 +3,8 @@ import { ProfileForm } from "@/components/forms/profile-form";
 import { Card } from "@/components/ui/card";
 import { getOnboardingPageData } from "@/lib/server/app-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function OnboardingPage() {
   const profile = await getOnboardingPageData();
 
@@ -27,7 +29,7 @@ export default async function OnboardingPage() {
         gender: "MALE",
         heightCm: 160,
         startWeightKg: 63,
-        startBodyFatPct: 24,
+        startBodyFatPct: 23,
         targetWeightKg: 55,
         targetBodyFatPct: 17,
         goalDate: "2026-09-30",

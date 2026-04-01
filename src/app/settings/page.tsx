@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { DEFAULT_SCORE_SETTINGS } from "@/lib/constants";
 import { getSettingsPageData } from "@/lib/server/app-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const data = await getSettingsPageData();
 

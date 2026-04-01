@@ -1,8 +1,10 @@
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { WeightTrendChart } from "@/components/analytics/weight-trend-chart";
+import { WeightTrendChartPanel } from "@/components/analytics/weight-trend-chart-panel";
 import { Card } from "@/components/ui/card";
 import { getAnalyticsPageData } from "@/lib/server/app-data";
+
+export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
   const data = await getAnalyticsPageData();
@@ -36,7 +38,7 @@ export default async function AnalyticsPage() {
       <Card>
         <h3 className="section-title">体重推移グラフ</h3>
         <div className="mt-4">
-          <WeightTrendChart data={chartData} />
+          <WeightTrendChartPanel data={chartData} />
         </div>
       </Card>
 
