@@ -211,6 +211,12 @@ Neon を使う場合の想定:
 Vercel の Neon integration は `DATABASE_URL` と `DATABASE_URL_UNPOOLED` を自動注入します。  
 このリポジトリでは Prisma CLI が `DIRECT_URL` → `DATABASE_URL_UNPOOLED` → `DATABASE_URL` の順で解決するため、通常は Vercel 側で `DIRECT_URL` を手動追加する必要はありません。
 
+ホーム画面追加向けのアイコン:
+
+- `/apple-touch-icon.png` `180x180`
+- `/icon-192.png` `192x192`
+- `/icon-512.png` `512x512`
+
 初回投入の流れ:
 
 ```bash
