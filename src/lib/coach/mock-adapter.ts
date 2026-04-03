@@ -3,10 +3,13 @@ import {
   weeklySummaryResponseSchema,
 } from "@/lib/schemas";
 import { applyStrengthLoadGuidance } from "@/lib/coach/strength-guidance";
+import {
+  getLatestWorkoutSummary,
+  resolveNextStrengthFocus,
+} from "@/lib/coach/workout-balance";
 import type {
   CoachAdapter,
   GenerateDailyPlanInput,
-  RecentLogEntry,
   GenerateWeeklySummaryInput,
 } from "@/lib/coach/types";
 
@@ -42,34 +45,54 @@ function toneLine(tone: string) {
   return "今日は続けることを最優先にして、登れる分だけ登りましょう。";
 }
 
-function getLatestWorkout(input: GenerateDailyPlanInput) {
-  return [...input.recentLogs]
-    .reverse()
-    .find((item) => item.workoutPerformed?.trim());
-}
-
-function buildNextWorkoutLine(latestWorkout?: RecentLogEntry) {
-  const text = latestWorkout?.workoutPerformed?.trim();
-
-  if (!text) {
-    return null;
+function buildStrengthPlan(mode: string, nextFocus: "UPPER" | "LOWER") {
+  if (mode === "RECOVERY") {
+    return "筋トレは行わず、痛みがない範囲で姿勢を整える。";
   }
 
-  return `前回は「${text}」を実施済み。明日は同じ部位を詰め込みすぎず、つながりが出る内容にします。`;
+  if (mode === "B_PLAN") {
+    if (nextFocus === "LOWER") {
+      return "自重スクワット 10回 x 1、ヒップリフト 12回 x 1。今日は下半身を軽く動かしてゼロ回避。";
+    }
+
+    return "壁腕立て 8回 x 1、チューブローまたはダンベルロー 8回 x 1。今日は上半身を軽く動かしてゼロ回避。";
+  }
+
+  if (mode === "LIGHT") {
+    if (nextFocus === "LOWER") {
+      return "下半身中心で2種目。自重スクワット 8回 x 2、レッグプレス 30kgで10回 x 2。";
+    }
+
+    return "上半身中心で2種目。チェストプレス 15kgで10回 x 2、ダンベルロー 片手6kgで10回 x 2。";
+  }
+
+  if (nextFocus === "LOWER") {
+    return "下半身中心で2種目。自重スクワット 10回 x 3、レッグプレス 40kgで10回 x 3。";
+  }
+
+  return "上半身中心で2種目。チェストプレス 20kgで10回 x 3、ダンベルロー 片手8kgで10回 x 3。";
+}
+
+function withBalanceNote(baseText: string, balanceNote: string | null) {
+  if (!balanceNote) {
+    return baseText;
+  }
+
+  return `${baseText} ${balanceNote}`;
 }
 
 export const mockCoachAdapter: CoachAdapter = {
   async generateDailyPlan(input: GenerateDailyPlanInput) {
     const mode = decideMode(input);
-    const nextWorkoutLine = buildNextWorkoutLine(getLatestWorkout(input));
+    const nextFocus = resolveNextStrengthFocus(input.recentLogs);
+    const balanceNote = getLatestWorkoutSummary(input.recentLogs);
 
     const planByMode = {
       STANDARD: {
-        summary: `体調は標準以上。今日はしっかり登れる日です。${nextWorkoutLine ?? ""}`.trim(),
+        summary: withBalanceNote("体調は標準以上。今日はしっかり登れる日です。", balanceNote),
         today_plan: {
           warmup: "トレッドミルで5分歩く。肩・股関節を軽く回して体温を上げる。",
-          strength:
-            `マシンまたは自重で2種目。スクワット 10回 x 3、チェストプレスまたはダンベルプレス 10回 x 3。${nextWorkoutLine ?? ""}`.trim(),
+          strength: buildStrengthPlan(mode, nextFocus),
           cardio: "トレッドミルで8.0km/h前後を5分、きつければ早歩きに切り替えて合計12分。",
           cooldown: "ふくらはぎ、もも裏、胸を中心に4分ストレッチ。",
         },
@@ -80,11 +103,10 @@ export const mockCoachAdapter: CoachAdapter = {
         caution_level: 2,
       },
       LIGHT: {
-        summary: `少し疲れが見えるので、今日は軽量プランで登山道を整えます。${nextWorkoutLine ?? ""}`.trim(),
+        summary: withBalanceNote("少し疲れが見えるので、今日は軽量プランで登山道を整えます。", balanceNote),
         today_plan: {
           warmup: "傾斜なしのウォーキング5分。呼吸を乱さず会話できる強度で。",
-          strength:
-            `フォーム重視で2種目。スクワット 8回 x 2、ダンベルロー 10回 x 2。${nextWorkoutLine ?? ""}`.trim(),
+          strength: buildStrengthPlan(mode, nextFocus),
           cardio: "早歩きまたはゆるいジョグを8〜10分。",
           cooldown: "股関節と背中を中心に4分ストレッチ。",
         },
@@ -94,10 +116,10 @@ export const mockCoachAdapter: CoachAdapter = {
         caution_level: 3,
       },
       B_PLAN: {
-        summary: `かなり重い日です。ゼロ回避を最優先にしてBプランで前進します。${nextWorkoutLine ?? ""}`.trim(),
+        summary: withBalanceNote("かなり重い日です。ゼロ回避を最優先にしてBプランで前進します。", balanceNote),
         today_plan: {
           warmup: "首・肩・股関節をゆるめるストレッチ3分。",
-          strength: `スクワット10回、壁腕立て8回を無理なく1セット。${nextWorkoutLine ?? ""}`.trim(),
+          strength: buildStrengthPlan(mode, nextFocus),
           cardio: "5〜8分だけ歩く。ペースはかなり楽でOK。",
           cooldown: "深呼吸をしながら全身を2分ほぐす。",
         },
@@ -107,10 +129,10 @@ export const mockCoachAdapter: CoachAdapter = {
         caution_level: 4,
       },
       RECOVERY: {
-        summary: `今日は回復を優先。休むことも登山計画の一部です。${nextWorkoutLine ?? ""}`.trim(),
+        summary: withBalanceNote("今日は回復を優先。休むことも登山計画の一部です。", balanceNote),
         today_plan: {
           warmup: "深呼吸と軽い首回しを2分。",
-          strength: "筋トレは行わず、痛みがない範囲で姿勢を整える。",
+          strength: buildStrengthPlan(mode, nextFocus),
           cardio: "室内をゆっくり5分歩くか、完全休養。",
           cooldown: "お風呂上がりに全身ストレッチ5分。",
         },
