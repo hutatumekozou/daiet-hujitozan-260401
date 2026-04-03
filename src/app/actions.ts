@@ -1,9 +1,11 @@
 "use server";
 
+import { addDays } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import type { ActionState } from "@/lib/action-state";
+import { formatDayKey, parseDayString } from "@/lib/date";
 import {
   ensureDailyPlan,
   saveDailyCheckin,
@@ -95,6 +97,8 @@ export async function saveCheckinAction(
     });
 
     await saveDailyCheckin(parsed);
+    const nextPlanDay = addDays(parseDayString(parsed.day), 1);
+    await ensureDailyPlan(nextPlanDay, true);
 
     revalidatePath("/dashboard");
     revalidatePath("/checkin");
@@ -105,7 +109,7 @@ export async function saveCheckinAction(
     return {
       status: "success",
       message: "今日の記録を保存しました。",
-      redirectTo: "/dashboard",
+      redirectTo: `/plan?day=${formatDayKey(nextPlanDay)}&from=checkin`,
     };
   } catch (error) {
     if (error instanceof ZodError) {
@@ -164,9 +168,11 @@ export async function saveSettingsAction(
   }
 }
 
-export async function refreshDailyPlanAction() {
-  await ensureDailyPlan(undefined, true);
+export async function refreshDailyPlanAction(formData: FormData) {
+  const day = parseDayString(String(formData.get("day") || ""));
+
+  await ensureDailyPlan(day, true);
   revalidatePath("/dashboard");
   revalidatePath("/plan");
-  redirect("/plan");
+  redirect(`/plan?day=${formatDayKey(day)}&refreshed=1`);
 }

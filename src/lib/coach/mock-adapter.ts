@@ -6,6 +6,7 @@ import { applyStrengthLoadGuidance } from "@/lib/coach/strength-guidance";
 import type {
   CoachAdapter,
   GenerateDailyPlanInput,
+  RecentLogEntry,
   GenerateWeeklySummaryInput,
 } from "@/lib/coach/types";
 
@@ -41,17 +42,34 @@ function toneLine(tone: string) {
   return "今日は続けることを最優先にして、登れる分だけ登りましょう。";
 }
 
+function getLatestWorkout(input: GenerateDailyPlanInput) {
+  return [...input.recentLogs]
+    .reverse()
+    .find((item) => item.workoutPerformed?.trim());
+}
+
+function buildNextWorkoutLine(latestWorkout?: RecentLogEntry) {
+  const text = latestWorkout?.workoutPerformed?.trim();
+
+  if (!text) {
+    return null;
+  }
+
+  return `前回は「${text}」を実施済み。明日は同じ部位を詰め込みすぎず、つながりが出る内容にします。`;
+}
+
 export const mockCoachAdapter: CoachAdapter = {
   async generateDailyPlan(input: GenerateDailyPlanInput) {
     const mode = decideMode(input);
+    const nextWorkoutLine = buildNextWorkoutLine(getLatestWorkout(input));
 
     const planByMode = {
       STANDARD: {
-        summary: "体調は標準以上。今日はしっかり登れる日です。",
+        summary: `体調は標準以上。今日はしっかり登れる日です。${nextWorkoutLine ?? ""}`.trim(),
         today_plan: {
           warmup: "トレッドミルで5分歩く。肩・股関節を軽く回して体温を上げる。",
           strength:
-            "マシンまたは自重で2種目。スクワット 10回 x 3、チェストプレスまたはダンベルプレス 10回 x 3。",
+            `マシンまたは自重で2種目。スクワット 10回 x 3、チェストプレスまたはダンベルプレス 10回 x 3。${nextWorkoutLine ?? ""}`.trim(),
           cardio: "トレッドミルで8.0km/h前後を5分、きつければ早歩きに切り替えて合計12分。",
           cooldown: "ふくらはぎ、もも裏、胸を中心に4分ストレッチ。",
         },
@@ -62,11 +80,11 @@ export const mockCoachAdapter: CoachAdapter = {
         caution_level: 2,
       },
       LIGHT: {
-        summary: "少し疲れが見えるので、今日は軽量プランで登山道を整えます。",
+        summary: `少し疲れが見えるので、今日は軽量プランで登山道を整えます。${nextWorkoutLine ?? ""}`.trim(),
         today_plan: {
           warmup: "傾斜なしのウォーキング5分。呼吸を乱さず会話できる強度で。",
           strength:
-            "フォーム重視で2種目。スクワット 8回 x 2、ダンベルロー 10回 x 2。",
+            `フォーム重視で2種目。スクワット 8回 x 2、ダンベルロー 10回 x 2。${nextWorkoutLine ?? ""}`.trim(),
           cardio: "早歩きまたはゆるいジョグを8〜10分。",
           cooldown: "股関節と背中を中心に4分ストレッチ。",
         },
@@ -76,10 +94,10 @@ export const mockCoachAdapter: CoachAdapter = {
         caution_level: 3,
       },
       B_PLAN: {
-        summary: "かなり重い日です。ゼロ回避を最優先にしてBプランで前進します。",
+        summary: `かなり重い日です。ゼロ回避を最優先にしてBプランで前進します。${nextWorkoutLine ?? ""}`.trim(),
         today_plan: {
           warmup: "首・肩・股関節をゆるめるストレッチ3分。",
-          strength: "スクワット10回、壁腕立て8回を無理なく1セット。",
+          strength: `スクワット10回、壁腕立て8回を無理なく1セット。${nextWorkoutLine ?? ""}`.trim(),
           cardio: "5〜8分だけ歩く。ペースはかなり楽でOK。",
           cooldown: "深呼吸をしながら全身を2分ほぐす。",
         },
@@ -89,7 +107,7 @@ export const mockCoachAdapter: CoachAdapter = {
         caution_level: 4,
       },
       RECOVERY: {
-        summary: "今日は回復を優先。休むことも登山計画の一部です。",
+        summary: `今日は回復を優先。休むことも登山計画の一部です。${nextWorkoutLine ?? ""}`.trim(),
         today_plan: {
           warmup: "深呼吸と軽い首回しを2分。",
           strength: "筋トレは行わず、痛みがない範囲で姿勢を整える。",

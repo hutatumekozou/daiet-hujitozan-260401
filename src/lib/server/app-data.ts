@@ -83,6 +83,8 @@ async function getRecentLogs(userId: string, days = 7) {
     completedPlan: item.completedPlan,
     completedBPlan: item.completedBPlan,
     bingeAte: item.bingeAte,
+    workoutPerformed: item.workoutPerformed ?? undefined,
+    comment: item.comment ?? undefined,
     totalMeters: item.progressLog?.totalMeters,
   }));
 }
@@ -527,7 +529,7 @@ export async function generateWeeklyCoachSummary(currentWeekStart = weekStart(to
   );
 }
 
-export async function getDashboardPageData() {
+export async function getDashboardPageData(planDate = today()) {
   const profile = await getUserProfile();
 
   if (!profile) {
@@ -546,7 +548,7 @@ export async function getDashboardPageData() {
       orderBy: { day: "desc" },
       take: 30,
     }),
-    ensureDailyPlan(today()),
+    ensureDailyPlan(planDate),
     prisma.weeklySummary.findFirst({
       where: { userId: profile.id },
       orderBy: { weekStart: "desc" },
@@ -562,6 +564,7 @@ export async function getDashboardPageData() {
   return {
     profile,
     plan,
+    planDate,
     weeklySummary,
     streakDays: computeStreakDays(checkins),
     weekMeters: currentWeekMeters(progressLogs),

@@ -25,6 +25,8 @@ export type RecentLogEntry = {
   completedPlan: boolean;
   completedBPlan: boolean;
   bingeAte: boolean;
+  workoutPerformed?: string;
+  comment?: string;
   totalMeters?: number;
 };
 

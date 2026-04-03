@@ -1,17 +1,44 @@
-import { AlertTriangle, RefreshCcw } from "lucide-react";
+import { addDays, isSameDay } from "date-fns";
+import { AlertTriangle } from "lucide-react";
 import { refreshDailyPlanAction } from "@/app/actions";
+import { RefreshPlanButton } from "@/components/plan/refresh-plan-button";
 import { Card } from "@/components/ui/card";
+import { formatDate, formatDayKey, parseDayString, today } from "@/lib/date";
 import { getPlanModeLabel, getDashboardPageData } from "@/lib/server/app-data";
 
 export const dynamic = "force-dynamic";
 
-export default async function PlanPage() {
-  const data = await getDashboardPageData();
+type PlanPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getSingleParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getPlanHeaderLabel(planDate: Date) {
+  if (isSameDay(planDate, today())) {
+    return "今日のAI提案";
+  }
+
+  if (isSameDay(planDate, addDays(today(), 1))) {
+    return "明日のAI提案";
+  }
+
+  return `${formatDate(planDate, "M月d日(E)")}のAI提案`;
+}
+
+export default async function PlanPage({ searchParams }: PlanPageProps) {
+  const query = searchParams ? await searchParams : {};
+  const planDate = parseDayString(getSingleParam(query.day));
+  const fromCheckin = getSingleParam(query.from) === "checkin";
+  const refreshed = getSingleParam(query.refreshed) === "1";
+  const data = await getDashboardPageData(planDate);
 
   if (!data || !data.plan) {
     return (
       <Card>
-        <h2 className="section-title">今日の提案を出すにはチェックインが必要です</h2>
+        <h2 className="section-title">提案を出すにはチェックインが必要です</h2>
       </Card>
     );
   }
@@ -21,15 +48,26 @@ export default async function PlanPage() {
       <Card className="app-gradient">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="mini-label">AI Coach</p>
+            <p className="mini-label">{getPlanHeaderLabel(planDate)}</p>
+            <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
+              対象日: {formatDate(planDate, "M月d日(E)")} の運動提案
+            </p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">{getPlanModeLabel(data.plan)}</h2>
             <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{data.plan.summary}</p>
+            {fromCheckin ? (
+              <p className="mt-3 text-sm font-medium text-[var(--primary)]">
+                今日の記録をもとに、次のトレーニングプランを更新しました。
+              </p>
+            ) : null}
+            {refreshed ? (
+              <p className="mt-2 text-sm font-medium text-[var(--success)]">
+                {formatDate(planDate, "M月d日(E)")} の提案を再生成しました。
+              </p>
+            ) : null}
           </div>
           <form action={refreshDailyPlanAction}>
-            <button className="secondary-button px-4 py-3" type="submit">
-              <RefreshCcw className="h-4 w-4" />
-              再生成
-            </button>
+            <input name="day" type="hidden" value={formatDayKey(planDate)} />
+            <RefreshPlanButton />
           </form>
         </div>
       </Card>
